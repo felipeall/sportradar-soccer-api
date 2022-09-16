@@ -5,18 +5,19 @@ from datetime import datetime
 last_updated = datetime.now().strftime("%Y-%m-%d")
 
 
-def _explode_column(df: pd.DataFrame, col_to_explode: str, cols_to_keep:list[str] = None):
-    df_to_explode = df.copy()
-    if cols_to_keep: df_to_explode = df_to_explode.loc[:,cols_to_keep+[col_to_explode]]
+def _explode_column(df_to_explode: pd.DataFrame, col_to_explode: str, cols_to_keep:list[str] = None):
+    df = df_to_explode.copy()
+    if cols_to_keep: df = df.loc[:,cols_to_keep+[col_to_explode]]
     
-    df_to_explode = df_to_explode.explode(col_to_explode)
+    df = df.explode(col_to_explode)
 
-    exploded = pd.json_normalize(df_to_explode[col_to_explode]).add_prefix(f'{col_to_explode}.')
-    exploded.index = df_to_explode.index
+    normalized = pd.json_normalize(df[col_to_explode]).add_prefix(f'{col_to_explode}.')
+    normalized.index = df.index
 
-    df_exploded = pd.concat([df_to_explode, exploded], axis=1).drop(columns=[col_to_explode])
+    df = df.join(normalized)
+    df = df.drop(columns=col_to_explode)
 
-    return df_exploded
+    return df
 
 
 def _explode_column_period_scores(df_to_explode: pd.DataFrame):
@@ -106,7 +107,7 @@ def _format_season_summary(response: requests.models.Response):
     season_summary = pd.json_normalize(response.json(), "summaries")
 
     season_summary = _explode_column_period_scores(season_summary)
-    season_summary = _explode_column_groups(season_summary)
+    season_summary = _explode_column(season_summary, 'sport_event.sport_event_context.groups')
     season_summary = season_summary.assign(last_updated=last_updated)
 
     cols_drop = [
