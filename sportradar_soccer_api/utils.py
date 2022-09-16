@@ -22,6 +22,9 @@ def _explode_column(df_to_explode: pd.DataFrame, col_to_explode: str, cols_to_ke
 
 def _explode_column_period_scores(df_to_explode: pd.DataFrame):
 
+    if 'sport_event_status.period_scores' not in df_to_explode.columns:
+        return df_to_explode
+
     df = df_to_explode.copy()
 
     exploded = df.explode('sport_event_status.period_scores')
