@@ -1,30 +1,8 @@
 import pandas as pd
 import requests
-
 from datetime import datetime
 
 last_updated = datetime.now().strftime("%Y-%m-%d")
-
-
-def _explode_column_horizontal(df: pd.DataFrame, col_to_explode: str, col_as_prefix: str):
-        df_to_explode = df.copy()
-
-        prefixes = list(set(str(v.get(col_as_prefix)) for v in df_to_explode[col_to_explode].explode().tolist() if not pd.isna(v)))
-
-        for i, prefix in enumerate(prefixes):
-            df_ = (
-                pd.json_normalize(df_to_explode[col_to_explode])
-                .loc[:,i]
-                .apply(pd.Series, dtype='O')
-                .drop(columns=col_as_prefix)
-                .add_prefix(f'{col_to_explode}.{prefix}.')
-            )
-
-            df_to_explode = pd.concat([df_to_explode, df_], axis=1)
-        
-        df_to_explode = df_to_explode.drop(columns=col_to_explode)
-
-        return df_to_explode
 
 
 def _explode_column(df: pd.DataFrame, col_to_explode: str, cols_to_keep:list[str] = None):
