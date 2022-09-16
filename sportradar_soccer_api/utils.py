@@ -94,6 +94,9 @@ def _format_seasons(response: requests.models.Response):
 def _format_season_summary(response: requests.models.Response):
     season_summary = pd.json_normalize(response.json(), "summaries")
 
+    if season_summary.empty: 
+        return pd.DataFrame({'sport_event.sport_event_context.season.id': [response.url.split("/")[-2]]})
+
     season_summary = _explode_column_period_scores(season_summary)
     season_summary = _explode_column(season_summary, 'sport_event.sport_event_context.groups')
     season_summary = season_summary.assign(last_updated=last_updated)
@@ -114,6 +117,9 @@ def _format_season_summary(response: requests.models.Response):
 def _format_season_players_statistics(response: requests.models.Response):
     season_players_statistics = pd.json_normalize(response.json(), "summaries")
 
+    if season_players_statistics.empty: 
+        return pd.DataFrame({'sport_event.sport_event_context.season.id': [response.url.split("/")[-2]]})
+
     season_players_statistics = season_players_statistics.loc[season_players_statistics['sport_event_status.match_status'] == 'ended']
     season_players_statistics = _explode_column(season_players_statistics, 'statistics.totals.competitors', ['sport_event.id', 'sport_event.sport_event_context.competition.id', 'sport_event.sport_event_context.season.id'])
     season_players_statistics = _explode_column(season_players_statistics, 'statistics.totals.competitors.players', ['sport_event.id', 'sport_event.sport_event_context.competition.id', 'sport_event.sport_event_context.season.id', 'statistics.totals.competitors.id'])
@@ -129,6 +135,9 @@ def _format_season_players_statistics(response: requests.models.Response):
 
 def _format_season_competitors_statistics(response: requests.models.Response):
     season_competitors_statistics = pd.json_normalize(response.json(), "summaries")
+
+    if season_competitors_statistics.empty: 
+        return pd.DataFrame({'sport_event.sport_event_context.season.id': [response.url.split("/")[-2]]})
 
     season_competitors_statistics = season_competitors_statistics.loc[season_competitors_statistics['sport_event_status.match_status'] == 'ended']
     season_competitors_statistics = _explode_column(season_competitors_statistics, 'statistics.totals.competitors', ['sport_event.id', 'sport_event.sport_event_context.competition.id', 'sport_event.sport_event_context.season.id'])
@@ -146,20 +155,19 @@ def _format_season_competitors_statistics(response: requests.models.Response):
 def _format_season_referees(response: requests.models.Response):
     season_referees = pd.json_normalize(response.json(), "summaries")
 
-    if 'sport_event.sport_event_conditions.referees' not in season_referees.columns: 
-        season_referees = pd.DataFrame({'season_id': [season_referees['sport_event.sport_event_context.season.id'][0]]})
+    if season_referees.empty or 'sport_event.sport_event_conditions.referees' not in season_referees.columns: 
+        return pd.DataFrame({'sport_event.sport_event_context.season.id': [response.url.split("/")[-2]]})
 
-    else:
-        season_referees = season_referees.loc[:,['sport_event.id', 'sport_event.sport_event_context.season.id', 'sport_event.sport_event_conditions.referees']]
-        season_referees = season_referees.explode('sport_event.sport_event_conditions.referees')
+    season_referees = season_referees.loc[:,['sport_event.id', 'sport_event.sport_event_context.season.id', 'sport_event.sport_event_conditions.referees']]
+    season_referees = season_referees.explode('sport_event.sport_event_conditions.referees')
 
-        normalized = pd.json_normalize(season_referees['sport_event.sport_event_conditions.referees'])
-        normalized.index = season_referees.index
+    normalized = pd.json_normalize(season_referees['sport_event.sport_event_conditions.referees'])
+    normalized.index = season_referees.index
 
-        season_referees = season_referees.join(normalized)
-        season_referees = season_referees.drop(columns='sport_event.sport_event_conditions.referees')
-        season_referees = season_referees.rename(columns={'sport_event.sport_event_context.season.id': 'season.id'})
-        season_referees = season_referees.reset_index(drop=True)
+    season_referees = season_referees.join(normalized)
+    season_referees = season_referees.drop(columns='sport_event.sport_event_conditions.referees')
+    season_referees = season_referees.rename(columns={'sport_event.sport_event_context.season.id': 'season.id'})
+    season_referees = season_referees.reset_index(drop=True)
 
     season_referees = season_referees.assign(last_updated=last_updated)
 
@@ -169,20 +177,19 @@ def _format_season_referees(response: requests.models.Response):
 def _format_season_ball_locations(response: requests.models.Response):
     season_ball_locations = pd.json_normalize(response.json(), "summaries")
 
-    if 'sport_event_status.ball_locations' not in season_ball_locations.columns: 
-        season_ball_locations = pd.DataFrame({'season_id': [season_ball_locations['sport_event.sport_event_context.season.id'][0]]})
+    if season_ball_locations.empty or 'sport_event_status.ball_locations' not in season_ball_locations.columns: 
+        return pd.DataFrame({'sport_event.sport_event_context.season.id': [response.url.split("/")[-2]]})
 
-    else:
-        season_ball_locations = season_ball_locations.loc[:,['sport_event.id', 'sport_event.sport_event_context.season.id','sport_event_status.ball_locations']]
-        season_ball_locations = season_ball_locations.explode('sport_event_status.ball_locations')
+    season_ball_locations = season_ball_locations.loc[:,['sport_event.id', 'sport_event.sport_event_context.season.id','sport_event_status.ball_locations']]
+    season_ball_locations = season_ball_locations.explode('sport_event_status.ball_locations')
 
-        normalized = pd.json_normalize(season_ball_locations['sport_event_status.ball_locations'])
-        normalized.index = season_ball_locations.index
+    normalized = pd.json_normalize(season_ball_locations['sport_event_status.ball_locations'])
+    normalized.index = season_ball_locations.index
 
-        season_ball_locations = season_ball_locations.join(normalized)
-        season_ball_locations = season_ball_locations.drop(columns='sport_event_status.ball_locations')
-        season_ball_locations = season_ball_locations.rename(columns={'sport_event.sport_event_context.season.id': 'season.id'})
-        season_ball_locations = season_ball_locations.reset_index(drop=True)
+    season_ball_locations = season_ball_locations.join(normalized)
+    season_ball_locations = season_ball_locations.drop(columns='sport_event_status.ball_locations')
+    season_ball_locations = season_ball_locations.rename(columns={'sport_event.sport_event_context.season.id': 'season.id'})
+    season_ball_locations = season_ball_locations.reset_index(drop=True)
     
     season_ball_locations = season_ball_locations.assign(last_updated=last_updated)
 
@@ -192,20 +199,19 @@ def _format_season_ball_locations(response: requests.models.Response):
 def _format_season_channels(response):
     season_channels = pd.json_normalize(response.json(), "summaries")
 
-    if 'sport_event.channels' not in season_channels.columns: 
-        season_channels = pd.DataFrame({'season_id': [season_channels['sport_event.sport_event_context.season.id'][0]]})
-    
-    else:
-        season_channels = season_channels.loc[:,['sport_event.id', 'sport_event.sport_event_context.season.id','sport_event.channels']]
-        season_channels = season_channels.explode('sport_event.channels')
+    if season_channels.empty or 'sport_event.channels' not in season_channels.columns: 
+        return pd.DataFrame({'sport_event.sport_event_context.season.id': [response.url.split("/")[-2]]})
 
-        normalized = pd.json_normalize(season_channels['sport_event.channels'])
-        normalized.index = season_channels.index
+    season_channels = season_channels.loc[:,['sport_event.id', 'sport_event.sport_event_context.season.id','sport_event.channels']]
+    season_channels = season_channels.explode('sport_event.channels')
 
-        season_channels = season_channels.join(normalized)
-        season_channels = season_channels.drop(columns='sport_event.channels')
-        season_channels = season_channels.rename(columns={'sport_event.sport_event_context.season.id': 'season.id'})
-        season_channels = season_channels.reset_index(drop=True)
+    normalized = pd.json_normalize(season_channels['sport_event.channels'])
+    normalized.index = season_channels.index
+
+    season_channels = season_channels.join(normalized)
+    season_channels = season_channels.drop(columns='sport_event.channels')
+    season_channels = season_channels.rename(columns={'sport_event.sport_event_context.season.id': 'season.id'})
+    season_channels = season_channels.reset_index(drop=True)
     
     season_channels = season_channels.assign(last_updated=last_updated)
 
