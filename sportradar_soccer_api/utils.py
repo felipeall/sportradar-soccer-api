@@ -120,8 +120,8 @@ def _format_season_summary(response: requests.models.Response):
 def _format_season_players_statistics(response: requests.models.Response):
     season_players_statistics = pd.json_normalize(response.json(), "summaries")
 
-    if season_players_statistics.empty: 
-        return pd.DataFrame({'sport_event.sport_event_context.season.id': [response.url.split("/")[-2]]})
+    if season_players_statistics.empty or 'statistics.totals.competitors' not in season_players_statistics.columns: 
+        return pd.DataFrame({'season.id': [response.url.split("/")[-2]]})
 
     season_players_statistics = season_players_statistics.loc[season_players_statistics['sport_event_status.match_status'] == 'ended']
     season_players_statistics = _explode_column(season_players_statistics, 'statistics.totals.competitors', ['sport_event.id', 'sport_event.sport_event_context.competition.id', 'sport_event.sport_event_context.season.id'])
