@@ -46,18 +46,6 @@ def _explode_column_period_scores(df_to_explode: pd.DataFrame):
     return df
 
 
-def _explode_column_groups(df_to_explode: pd.DataFrame):
-    df = df_to_explode.copy()
-
-    df = df.explode('sport_event.sport_event_context.groups')
-    normalized = pd.json_normalize(df['sport_event.sport_event_context.groups'])
-
-    df = df.join(normalized)
-    df = df.drop(columns='sport_event.sport_event_context.groups')
-
-    return df
-
-
 def _parse_columns_dtypes(df: pd.DataFrame, cols_dtypes: dict):
     for col, col_dtype in cols_dtypes.items():
         if col in df.columns:
