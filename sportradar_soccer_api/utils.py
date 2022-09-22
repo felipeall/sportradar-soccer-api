@@ -14,7 +14,7 @@ def _explode_column(df_to_explode: pd.DataFrame, col_to_explode: str, cols_to_ke
     normalized = pd.json_normalize(df[col_to_explode]).add_prefix(f'{col_to_explode}.')
     normalized.index = df.index
 
-    df = df.join(normalized)
+    df = pd.concat([df, normalized], axis=1)
     df = df.drop(columns=col_to_explode)
 
     return df
